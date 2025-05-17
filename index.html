@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Control de Ingresos y Gastos - Contabilidad</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f7f8;
+    margin: 0;
+    padding: 0 1rem 2rem 1rem;
+    color: #333;
+  }
+  header {
+    max-width: 900px;
+    margin: 2rem auto 1rem auto;
+    text-align: center;
+  }
+  header h1 {
+    margin-bottom: 0.2rem;
+    color: #2a5275;
+  }
+  header p {
+    color: #617d98;
+    font-size: 1.1rem;
+  }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    padding: 1.5rem 2rem 2rem 2rem;
+    border-radius: 8px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+  }
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.8rem;
+  }
+  form > * {
+    flex: 1 1 140px;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+    color: #444;
+  }
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1.8px solid #ccc;
+    transition: border-color 0.3s ease;
+  }
+  input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    border-color: #2a5275;
+    outline: none;
+  }
+  button#agregar {
+    background-color: #2a5275;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    flex: 1 1 120px;
+    transition: background-color 0.3s ease;
+  }
+  button#agregar:hover {
+    background-color: #1b3650;
+  }
+  section.saldos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .saldo-box {
+    background-color: #eaf2f6;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    flex: 1 1 250px;
+    text-align: center;
+    box-shadow: 1px 1px 5px rgba(42,82,117,0.15);
+  }
+  .saldo-box h3 {
+    margin: 0 0 0.5rem 0;
+    color: #2a5275;
+  }
+  .saldo-box .monto {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #555;
+  }
+  .monto.positivo {
+    color: #2a7a2a;
+  }
+  .monto.negativo {
+    color: #b02a2a;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+  }
+  thead {
+    background: #2a5275;
+    color: white;
+  }
+  th, td {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  button.borrar-btn {
+    background: #b02a2a;
+    color: #fff;
+    border: none;
+    padding: 0.4rem 0.7rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+    font-size: 0.9rem;
+  }
+  button.borrar-btn:hover {
+    background: #7a1a1a;
+  }
+  .historial-filtro {
+    margin-bottom: 1.2rem;
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  select, button#mostrarHistorial {
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1.7px solid #ccc;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+  }
+  select:focus, button#mostrarHistorial:hover {
+    border-color: #2a5275;
+    outline: none;
+  }
+  footer {
+    max-width: 900px;
+    margin: 1rem auto;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #999;
+  }
+  @media (max-width: 600px) {
+    form {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    section.saldos {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Control de Ingresos y Gastos</h1>
+  <p>Adimistra tus ingresos de forma eficiente a corto y largo plazo</p>
+</header>
+<main>
+  <!-- Formulario para agregar nuevos movimientos -->
+  <form id="form-movimiento" autocomplete="off" aria-label="Formulario para agregar movimiento de ingreso o gasto">
+    <div>
+      <label for="tipo">Tipo:</label>
+      <select id="tipo" required>
+        <option value="" disabled selected>Selecciona tipo</option>
+        <option value="ingreso">Ingreso</option>
+        <option value="gasto">Gasto</option>
+      </select>
+    </div>
+    <div>
+      <label for="descripcion">Descripción:</label>
+      <input type="text" id="descripcion" placeholder="Descripción del movimiento" required minlength="3" maxlength="50" />
+    </div>
+    <div>
+      <label for="monto">Monto (COP):</label>
+      <input type="number" id="monto" placeholder="Ej: 150000" min="1" step="1" required />
+    </div>
+    <button type="submit" id="agregar" aria-label="Agregar movimiento">Agregar</button>
+  </form>
+
+  <!-- Sección que muestra los totales de ingresos, gastos y el saldo neto -->
+  <section class="saldos" aria-live="polite" aria-atomic="true" aria-relevant="all">
+    <div class="saldo-box" id="total-ingresos-box" tabindex="0">
+      <h3>Total ingresos</h3>
+      <div class="monto positivo" id="total-ingresos">COP $0</div>
+    </div>
+    <div class="saldo-box" id="total-gastos-box" tabindex="0">
+      <h3>Total gastos</h3>
+      <div class="monto negativo" id="total-gastos">COP $0</div>
+    </div>
+    <div class="saldo-box" id="saldo-neto-box" tabindex="0">
+      <h3>Saldo neto</h3>
+      <div class="monto" id="saldo-neto">COP $0</div>
+    </div>
+  </section>
+
+  <!-- Sección para filtrar historial por mes y año y tabla con movimientos listados -->
+  <section aria-label="Historial de movimientos">
+    <div class="historial-filtro" aria-label="Filtro de historial por mes y año">
+      <label for="filtro-mes">Mes:</label>
+      <select id="filtro-mes" aria-controls="tabla-movimientos">
+        <option value="all" selected>Todos los meses</option>
+        <option value="1">Enero</option>
+        <option value="2">Febrero</option>
+        <option value="3">Marzo</option>
+        <option value="4">Abril</option>
+        <option value="5">Mayo</option>
+        <option value="6">Junio</option>
+        <option value="7">Julio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Septiembre</option>
+        <option value="10">Octubre</option>
+        <option value="11">Noviembre</option>
+        <option value="12">Diciembre</option>
+      </select>
+      <label for="filtro-anio">Año:</label>
+      <select id="filtro-anio" aria-controls="tabla-movimientos">
+        <option value="all" selected>Todos los años</option>
+      </select>
+      <button id="mostrarHistorial" aria-label="Mostrar historial filtrado">Mostrar historial</button>
+    </div>
+
+    <table id="tabla-movimientos" aria-describedby="descripcion-tabla">
+      <caption id="descripcion-tabla">Listado de ingresos y gastos registrados</caption>
+      <thead>
+        <tr>
+          <th>Fecha y hora</th>
+          <th>Tipo</th>
+          <th>Descripción</th>
+          <th>Monto (COP)</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Aquí se insertan filas con registros -->
+      </tbody>
+    </table>
+  </section>
+</main>
+<footer>
+  &copy; 2025-Pyg a la mano.
+</footer>
+
+<script>
+(function() {
+  // Constante para la clave de localStorage donde guardamos los registros
+  const LOCALSTORAGE_KEY = "controlIngresosGastos_registros";
+
+  // Elementos DOM del formulario y tabla
+  const form = document.getElementById('form-movimiento');
+  const tipoSelect = document.getElementById('tipo');
+  const descripcionInput = document.getElementById('descripcion');
+  const montoInput = document.getElementById('monto');
+  const tablaBody = document.querySelector('#tabla-movimientos tbody');
+
+  // Elementos DOM para mostrar totales
+  const totalIngresosElem = document.getElementById('total-ingresos');
+  const totalGastosElem = document.getElementById('total-gastos');
+  const saldoNetoElem = document.getElementById('saldo-neto');
+
+  // Elementos para filtro historial
+  const filtroMes = document.getElementById('filtro-mes');
+  const filtroAnio = document.getElementById('filtro-anio');
+  const btnMostrarHistorial = document.getElementById('mostrarHistorial');
+
+  // Array para almacenar los registros de ingresos y gastos
+  let registros = [];
+
+  /**
+   * formatearFechaHora
+   * Esta función recibe un objeto Date y devuelve una cadena con formato:
+   * "YYYY-MM-DD HH:mm:ss" para mostrar fecha y hora legible en español.
+   */
+  function formatearFechaHora(fecha) {
+    const y = fecha.getFullYear();
+    const m = (fecha.getMonth()+1).toString().padStart(2,'0');
+    const d = fecha.getDate().toString().padStart(2,'0');
+    const hh = fecha.getHours().toString().padStart(2,'0');
+    const mm = fecha.getMinutes().toString().padStart(2,'0');
+    const ss = fecha.getSeconds().toString().padStart(2,'0');
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+  }
+
+  /**
+   * guardarRegistros
+   * Guarda el array "registros" en localStorage en formato JSON,
+   * para persistir datos en el navegador.
+   */
+  function guardarRegistros() {
+    localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(registros));
+  }
+
+  /**
+   * cargarRegistros
+   * Carga los registros almacenados en localStorage si existen,
+   * y los parsea para usarlos en la aplicación.
+   * Añade también una propiedad "fechaObj" que es un objeto Date
+   * para manejar mejor las fechas luego.
+   */
+  function cargarRegistros() {
+    const datos = localStorage.getItem(LOCALSTORAGE_KEY);
+    if(datos) {
+      registros = JSON.parse(datos);
+      registros.forEach(r => r.fechaObj = new Date(r.fecha));
+    } else {
+      registros = [];
+    }
+  }
+
+  /**
+   * actualizarFiltroAnios
+   * Actualiza el selector de años con los años existentes en los registros,
+   * para que se puedan filtrar los movimientos por año.
+   * Lo ordena de mayor a menor.
+   */
+  function actualizarFiltroAnios() {
+    const aniosSet = new Set(registros.map(r => new Date(r.fecha).getFullYear()));
+    const anios = Array.from(aniosSet).sort((a,b) => b - a);
+    filtroAnio.innerHTML = '<option value="all" selected>Todos los años</option>';
+    for(const a of anios) {
+      const opt = document.createElement('option');
+      opt.value = a;
+      opt.textContent = a;
+      filtroAnio.appendChild(opt);
+    }
+  }
+
+  /**
+   * formatearCOP
+   * Recibe un número y lo convierte a formato de moneda
+   * en pesos colombianos (COP), sin decimales.
+   */
+  function formatearCOP(numero) {
+    return numero.toLocaleString('es-CO', {style: 'currency', currency: 'COP', minimumFractionDigits: 0});
+  }
+
+  /**
+   * Evento submit del formulario para agregar un movimiento nuevo.
+   * Valida los campos, crea un objeto registro con fecha y hora,
+   * lo agrega al array registros, guarda en localStorage,
+   * limpia formulario y actualiza la vista.
+   */
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+
+    const tipo = tipoSelect.value;
+    const descripcion = descripcionInput.value.trim();
+    const monto = Number(montoInput.value);
+
+    if(!tipo || !descripcion || isNaN(monto) || monto <= 0) {
+      alert('Por favor completa correctamente todos los campos.');
+      return;
+    }
+
+    const fecha = new Date();
+    const fechaStr = formatearFechaHora(fecha);
+
+    // Crear nuevo registro con id único (timestamp)
+    const nuevoRegistro = {
+      id: Date.now(),
+      fecha: fechaStr,
+      fechaObj: fecha,
+      tipo,
+      descripcion,
+      monto
+    };
+
+    // Agregar registro y guardar
+    registros.push(nuevoRegistro);
+    guardarRegistros();
+
+    // Actualizar todo en la interfaz
+    refrescarVista();
+
+    // Reiniciar formulario y poner foco en el selector tipo
+    form.reset();
+    tipoSelect.focus();
+  });
+
+  /**
+   * borrarRegistro
+   * Recibe el id de un registro y lo elimina del array registros
+   * luego actualiza el almacenamiento y la vista.
+   * Pide confirmación antes de borrar.
+   */
+  function borrarRegistro(id) {
+    if(confirm('¿Estás seguro que deseas borrar este registro?')) {
+      registros = registros.filter(r => r.id !== id);
+      guardarRegistros();
+      refrescarVista();
+    }
+  }
+
+  /**
+   * construirFilas
+   * Recibe un array de registros y genera filas para la tabla
+   * mostrando todos sus campos y un botón "Borrar".
+   * Si no hay registros, muestra mensaje indicándolo.
+   */
+  function construirFilas(regs) {
+    tablaBody.innerHTML = '';
+    if(regs.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 5;
+      td.style.textAlign = 'center';
+      td.textContent = 'No hay registros para mostrar.';
+      tr.appendChild(td);
+      tablaBody.appendChild(tr);
+      return;
+    }
+    regs.forEach(r => {
+      const tr = document.createElement('tr');
+
+      // Columna fecha y hora del movimiento
+      const tdFecha = document.createElement('td');
+      tdFecha.textContent = r.fecha;
+      tr.appendChild(tdFecha);
+
+      // Columna tipo (Ingreso/Gasto)
+      const tdTipo = document.createElement('td');
+      tdTipo.textContent = r.tipo === 'ingreso' ? 'Ingreso' : 'Gasto';
+      tdTipo.style.color = r.tipo === 'ingreso' ? '#2a7a2a' : '#b02a2a';
+      tr.appendChild(tdTipo);
+
+      // Columna descripción del movimiento
+      const tdDesc = document.createElement('td');
+      tdDesc.textContent = r.descripcion;
+      tr.appendChild(tdDesc);
+
+      // Columna monto con formato COP y color según tipo
+      const tdMonto = document.createElement('td');
+      tdMonto.textContent = formatearCOP(r.monto);
+      tdMonto.style.color = r.tipo === 'ingreso' ? '#2a7a2a' : '#b02a2a';
+      tr.appendChild(tdMonto);
+
+      // Columna acción: botón para borrar el registro
+      const tdAcciones = document.createElement('td');
+      const btnBorrar = document.createElement('button');
+      btnBorrar.textContent = 'Borrar';
+      btnBorrar.className = 'borrar-btn';
+      btnBorrar.setAttribute('aria-label', 'Borrar registro de ' + r.descripcion + ' de tipo ' + (r.tipo === 'ingreso' ? 'Ingreso' : 'Gasto') + ' y monto ' + formatearCOP(r.monto));
+      btnBorrar.onclick = () => borrarRegistro(r.id);
+      tdAcciones.appendChild(btnBorrar);
+      tr.appendChild(tdAcciones);
+
+      tablaBody.appendChild(tr);
+    });
+  }
+
+  /**
+   * refrescarVista
+   * Actualiza la vista general:
+   * - Actualiza el filtro de años
+   * - Aplica los filtros mes y año seleccionados para filtrar registros
+   * - Construye la tabla con registros filtrados
+   * - Actualiza los saldos totales según registros filtrados
+   */
+  function refrescarVista() {
+    actualizarFiltroAnios();
+
+    let registrosFiltrados = registros;
+    // Filtrar por mes seleccionado si no es "all"
+    if(filtroMes.value !== 'all') {
+      registrosFiltrados = registrosFiltrados.filter(r => r.fechaObj.getMonth() + 1 === Number(filtroMes.value));
+    }
+    // Filtrar por año seleccionado si no es "all"
+    if(filtroAnio.value !== 'all') {
+      registrosFiltrados = registrosFiltrados.filter(r => r.fechaObj.getFullYear() === Number(filtroAnio.value));
+    }
+
+    construirFilas(registrosFiltrados);
+    actualizarSaldos(registrosFiltrados);
+  }
+
+  /**
+   * actualizarSaldos
+   * Calcula y muestra en el DOM:
+   * - la suma total de ingresos,
+   * - la suma total de gastos,
+   * - y el saldo neto (ingresos - gastos),
+   * además colorea el saldo neto según resultado positivo, negativo o neutro.
+   */
+  function actualizarSaldos(regs) {
+    const sumaIngresos = regs.filter(r => r.tipo === 'ingreso').reduce((acc, r) => acc + r.monto, 0);
+    const sumaGastos = regs.filter(r => r.tipo === 'gasto').reduce((acc, r) => acc + r.monto, 0);
+    const saldo = sumaIngresos - sumaGastos;
+
+    totalIngresosElem.textContent = formatearCOP(sumaIngresos);
+    totalGastosElem.textContent = formatearCOP(sumaGastos);
+    saldoNetoElem.textContent = formatearCOP(saldo);
+
+    if(saldo > 0) {
+      saldoNetoElem.classList.remove('negativo');
+      saldoNetoElem.classList.add('positivo');
+    } else if(saldo < 0) {
+      saldoNetoElem.classList.remove('positivo');
+      saldoNetoElem.classList.add('negativo');
+    } else {
+      saldoNetoElem.classList.remove('positivo', 'negativo');
+    }
+  }
+
+  // Evento para mostrar el historial con los filtros seleccionados
+  btnMostrarHistorial.addEventListener('click', e => {
+    e.preventDefault();
+    refrescarVista();
+  });
+
+  // Inicialización al cargar la página: carga registros y muestra todo
+  cargarRegistros();
+  refrescarVista();
+
+})();
+</script>
+</body>
+</html>
+
+
